@@ -4,7 +4,7 @@ import os
 import re
 from typing import List, Union
 import openai
-from dotenv import load_dotenv, find_dotenv
+#from dotenv import load_dotenv, find_dotenv
 from langchain.vectorstores import FAISS
 from langchain.agents import load_tools
 from langchain.embeddings import OpenAIEmbeddings
@@ -18,10 +18,12 @@ from langchain.schema import AgentAction, AgentFinish, HumanMessage
 from langchain.tools import BraveSearch
 from langchain.memory import ConversationBufferWindowMemory
 
+
 load_dotenv(find_dotenv())
 openai.api_key = os.environ['OPENAI_API_KEY']
 SERPAPI_API_KEY = os.environ['SERPAPI_API_KEY']
 BRAVE_API_KEY = os.environ['BRAVE_API_KEY']
+
 
 model_name = 'text-embedding-ada-002'
 embed = OpenAIEmbeddings(
