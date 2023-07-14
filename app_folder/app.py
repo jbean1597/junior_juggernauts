@@ -21,7 +21,6 @@ from langchain.memory import ConversationBufferWindowMemory
 load_dotenv(find_dotenv())
 openai.api_key = os.environ['OPENAI_API_KEY']
 SERPAPI_API_KEY = os.environ['SERPAPI_API_KEY']
-SERPER_API_KEY = os.environ['SERPER_API_KEY']
 BRAVE_API_KEY = os.environ['BRAVE_API_KEY']
 
 model_name = 'text-embedding-ada-002'
