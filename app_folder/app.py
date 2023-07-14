@@ -13,12 +13,11 @@ st.title('Welcome to the Computer Science Learning tool.')
 
 
 question = st.text_input('Please enter your question here: ')
-answer = llm(question)
 
 if st.button('Submit'):
     if question == "":
         output = 'Please ask a valid question'
     else:
-        output = f"The answer to {question} is blah blah blah"
+        answer = llm(question)
 
     st.write(answer)
