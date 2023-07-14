@@ -4,7 +4,7 @@ import os
 import re
 from typing import List, Union
 import openai
-#from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv, find_dotenv
 from langchain.vectorstores import FAISS
 from langchain.agents import load_tools
 from langchain.embeddings import OpenAIEmbeddings
