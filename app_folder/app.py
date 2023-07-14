@@ -18,11 +18,12 @@ from langchain.schema import AgentAction, AgentFinish, HumanMessage
 from langchain.tools import BraveSearch
 from langchain.memory import ConversationBufferWindowMemory
 
-#load_dotenv(find_dotenv())
-openai.api_key = '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'
-SERPAPI_API_KEY = 'b63d40b3acabad62185803ff03dc52738ab3748e56c7064804ffe4e558c1251b'
-SERPER_API_KEY = '037966bb83f552d3d7ebd1966bb7297ef71a4845'
-BRAVE_API_KEY = 'BSAv1neIuQOsxqOyy0sEe_ie2zD_n_V'
+
+load_dotenv(find_dotenv())
+openai.api_key = os.environ['OPENAI_API_KEY']
+SERPAPI_API_KEY = os.environ['SERPAPI_API_KEY']
+BRAVE_API_KEY = os.environ['BRAVE_API_KEY']
+
 
 model_name = 'text-embedding-ada-002'
 embed = OpenAIEmbeddings(
