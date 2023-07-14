@@ -6,19 +6,23 @@ from typing import List, Union
 import openai
 from dotenv import load_dotenv, find_dotenv
 from langchain.vectorstores import FAISS
+from langchain.agents import load_tools
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.chains import RetrievalQA, RetrievalQAWithSourcesChain
+from langchain.chains import RetrievalQA
 from langchain.llms import OpenAI
 from langchain.prompts import BaseChatPromptTemplate
-from langchain.agents import initialize_agent, Tool, AgentExecutor, AgentType, LLMSingleActionAgent, AgentOutputParser
+from langchain.agents import initialize_agent, Tool, AgentExecutor, LLMSingleActionAgent, AgentOutputParser
 from langchain.tools import YouTubeSearchTool
-from langchain import SerpAPIWrapper, PromptTemplate, LLMChain
-from langchain.chat_models import ChatOpenAI
+from langchain import  LLMChain
 from langchain.schema import AgentAction, AgentFinish, HumanMessage
+from langchain.tools import BraveSearch
+from langchain.memory import ConversationBufferWindowMemory
 
 load_dotenv(find_dotenv())
 openai.api_key = os.environ['OPENAI_API_KEY']
 SERPAPI_API_KEY = os.environ['SERPAPI_API_KEY']
+SERPER_API_KEY = os.environ['SERPER_API_KEY']
+BRAVE_API_KEY = os.environ['BRAVE_API_KEY']
 
 model_name = 'text-embedding-ada-002'
 embed = OpenAIEmbeddings(
@@ -26,35 +30,37 @@ embed = OpenAIEmbeddings(
 )
 
 vectorstore = FAISS.load_local("../arxiv_vectorstore", embeddings=embed)
+memory=ConversationBufferWindowMemory(k=3)
 
-llm = OpenAI(model_name="text-davinci-003", temperature=0)
+llm = OpenAI(model_name="text-davinci-003", temperature=1)
 
 papers_chunks_tool = RetrievalQA.from_chain_type(
     llm=llm, chain_type="stuff", retriever=vectorstore.as_retriever()
 )
-search_tool = SerpAPIWrapper(serpapi_api_key=SERPAPI_API_KEY)
+
+search_tool = BraveSearch.from_api_key(api_key=BRAVE_API_KEY, search_kwargs={"count": 5})
 youtube_tool = YouTubeSearchTool()
 
 tools = [
     Tool(
         name="FAISS QA System",
         func=papers_chunks_tool.run,
-        description="useful to answer questions about LLMs and artificial intelligence. use this more than the other tool if the question is related to artificial intelligence and/or LLMS",
+        description="useful to answer questions about LLMs and artificial intelligence. use this more than the other tool if the question is related to artificial intelligence (AI), computer science (CS), and/or large language models (LLM/LLMs)",
     ),
     Tool(
         name = "Search",
         func=search_tool.run,
-        description="useful for when you need to look for some resources such as web articles and educational courses"
+        description="useful for finding related articles and urls to support your answer to the question. DO NOT use this for finding youtube videos, make sure to split up the youtube search. Input should be a search query"
     ),
     Tool(
         name = "Youtube Search",
         func=youtube_tool.run,
-        description="useful for finding educational videos"
+        description="useful for finding educational youtube videos related to the question. Use this instead of the Search tool for finding youtube videos"
     )
 ]
 
 # Set up the base template
-template = """Complete the objective as best you can. You are an AI agent designed to help users study the topic of LLMs. You have access to the following tools:
+template = """You are the most experienced teacher in all subjects of artificial intelligence (AI) and large language models (LLMs). You're never satisfied with just the first answer you find and the most important thing to you is providing evidence like articles and youtube videos. Answer the question as best as you can with all the additional resources related to the question. You have access to the following tools:
 
 {tools}
 
@@ -63,20 +69,17 @@ Use the following format:
 Question: the input question you must answer
 Thought: you should always think about what to do
 Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
+Action Input: the input to the action, should be specific
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
 Final Answer: the final answer to the original input question
 
-After finding the answer to the original question, search for a related web article.
-After finding the web article, search for one related Youtube video's url link. Output the original question's answer and the Youtube urls.
-After having both the answer to the question and the additional resources, output the answer and the resources.
-
-These were previous tasks you completed:
-
-
+Once you have the final answer, at least 2 existing url links to an informative article, and at least 2 existing url links to educational youtube videos then output them and make the links hyperlinks. Describe the final answer as a product of our database of academic papers
 Begin!
+
+Previous conversation history:
+{history}
 
 Question: {user_input}
 {agent_scratchpad}"""
@@ -111,7 +114,7 @@ prompt = CustomPromptTemplate(
     tools=tools,
     # This omits the `agent_scratchpad`, `tools`, and `tool_names` variables because those are generated dynamically
     # This includes the `intermediate_steps` variable because that is needed
-    input_variables=["user_input", "intermediate_steps"]
+    input_variables=["user_input", "intermediate_steps", "history"]
 )
 
 class CustomOutputParser(AgentOutputParser):
@@ -137,7 +140,7 @@ class CustomOutputParser(AgentOutputParser):
     
 output_parser = CustomOutputParser()
 
-llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+llm = OpenAI(model_name="gpt-3.5-turbo", temperature=1)
 
 # LLM chain consisting of the LLM and a prompt
 llm_chain = LLMChain(llm=llm, prompt=prompt)
@@ -158,7 +161,7 @@ st.title('Welcome to the Computer Science Learning tool.')
 
 question = st.text_input('Please enter your question here: ')
 
-agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
+agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True, memory=memory)
 
 
 
