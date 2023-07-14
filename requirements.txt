@@ -3,3 +3,5 @@ openai
 tiktoken
 langchain
 youtube_search
+faiss-cpu
+google-search-results
